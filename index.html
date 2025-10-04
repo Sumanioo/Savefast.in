@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>StreamSave — Paste link to get downloads</title>
+  <meta name="description" content="Aesthetic demo frontend for a content downloader (frontend-only)." />
+  <style>
+    :root{
+      --bg1:#0f172a; /* deep navy */
+      --glass: rgba(255,255,255,0.06);
+      --accent1:#7c5cff;
+      --accent2:#ff7ab6;
+      --accent3:#4fd1c5;
+      --card-bg: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.06);
+      --text: #e6eef8;
+      --muted: #b8c2d6;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;padding:0;background:var(--bg1);color:var(--text)}
+
+    /* Animated gradient background */
+    .bg-anim{
+      position:fixed;inset:0;z-index:-2;overflow:hidden;
+      background: radial-gradient(600px 400px at 10% 10%, rgba(124,92,255,0.18), transparent 15%),
+                  radial-gradient(700px 450px at 90% 80%, rgba(255,122,182,0.14), transparent 18%),
+                  radial-gradient(500px 300px at 50% 40%, rgba(79,209,197,0.09), transparent 12%);
+      animation: moveBG 12s linear infinite alternate;
+      filter:blur(30px) saturate(1.05);
+    }
+    @keyframes moveBG{from{transform:translateY(0) scale(1)} to{transform:translateY(-30px) scale(1.03)}}
+
+    /* Subtle floating particles */
+    .particles{position:fixed;inset:0;pointer-events:none;z-index:-1}
+    .particle{position:absolute;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.03);box-shadow:0 0 12px rgba(255,255,255,0.02)}
+
+    main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px}
+    .container{width:100%;max-width:920px;padding:36px;border-radius:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 40px rgba(2,6,23,0.6);backdrop-filter: blur(8px);border:1px solid rgba(255,255,255,0.04)}
+
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:24px}
+    @media (max-width:880px){.grid{grid-template-columns:1fr;}}
+
+    .heading{display:flex;flex-direction:column;gap:8px}
+    h1{margin:0;font-size:28px;letter-spacing:-0.2px}
+    p.lead{margin:0;color:var(--muted)}
+
+    .card{padding:22px;border-radius:14px;background:var(--card-bg);border:1px solid var(--glass-border)}
+
+    /* Input area */
+    .input-row{display:flex;gap:12px;margin-top:14px}
+    input[type=text]{flex:1;padding:14px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text);outline:none;font-size:15px}
+    select{padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);color:var(--text)}
+
+    .btn{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;border:0;cursor:pointer;font-weight:600}
+    .btn-primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white;box-shadow:0 8px 24px rgba(124,92,255,0.12)}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--text)}
+
+    /* Right column preview/style */
+    .preview{display:flex;flex-direction:column;gap:12px}
+    .preview .thumb{height:190px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600;border:1px solid rgba(255,255,255,0.03)}
+    .meta{font-size:14px;color:var(--muted)}
+
+    .results{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+    .result-row{display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);border:1px solid rgba(255,255,255,0.02)}
+    .quality{font-weight:600}
+
+    .small{font-size:13px;color:var(--muted)}
+
+    footer{margin-top:16px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;align-items:center}
+
+    /* Loading */
+    .loader{height:6px;border-radius:6px;background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.06));overflow:hidden}
+    .loader .bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent3),var(--accent1));transition:width 600ms ease}
+
+    /* Micro interactions */
+    .brand{display:inline-flex;align-items:center;gap:10px}
+    .logo{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;box-shadow:0 6px 18px rgba(99,51,255,0.14)}
+
+    .disclaimer{margin-top:12px;color:#ffdbc1;background:linear-gradient(90deg, rgba(255,122,182,0.06), rgba(124,92,255,0.03));padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)}
+
+    a.link{color:var(--accent3);text-decoration:none;font-weight:600}
+  </style>
+</head>
+<body>
+  <div class="bg-anim"></div>
+  <div class="particles" aria-hidden="true"></div>
+  <main>
+    <div class="container">
+      <div class="grid">
+        <section>
+          <div class="heading">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div class="brand">
+                <div class="logo">SS</div>
+                <div>
+                  <h1 style="margin:0">StreamSave (Demo)</h1>
+                  <div class="small">Paste a link from YouTube, Instagram or Facebook and click Download</div>
+                </div>
+              </div>
+            </div>
+            <p class="lead">A professional, aesthetic demo frontend. This page simulates the UI and the flow but does not fetch copyrighted content. Connect a backend to enable real downloads (see footer).</p>
+          </div>
+
+          <div class="card" style="margin-top:18px">
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <select id="platform" aria-label="Platform selector">
+                <option value="youtube">YouTube</option>
+                <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
+              </select>
+
+              <div style="flex:1;display:flex;gap:12px;align-items:center" class="input-row">
+                <input id="url-input" type="text" placeholder="Paste video / reel / post link here" />
+                <button id="download-btn" class="btn btn-primary">Download</button>
+              </div>
+            </div>
+
+            <div id="loading" style="margin-top:14px;display:none">
+              <div class="loader"><div class="bar" id="bar"></div></div>
+              <div class="small" style="margin-top:8px">Preparing download options…</div>
+            </div>
+
+            <div id="results" style="display:none;margin-top:12px">
+              <div class="results" id="result-list"></div>
+              <div class="disclaimer small">This is a frontend-only demo. To enable real downloads you must integrate a backend (for example an endpoint using yt-dlp or a permitted API). Be sure to respect copyright and platform terms of service.</div>
+            </div>
+
+          </div>
+
+          <footer>
+            <div class="small">Made with care • Aesthetic demo UI</div>
+            <div class="small">Made by Suman</div>
+          </footer>
+        </section>
+
+        <aside>
+          <div class="preview card">
+            <div class="thumb">Preview will appear here</div>
+            <div class="meta small" id="meta">No link yet — paste any public link to preview basic metadata.</div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-ghost" id="copy-btn">Copy Link</button>
+              <button class="btn btn-ghost" id="clear-btn">Clear</button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:14px">
+            <div style="font-weight:700;margin-bottom:8px">How this demo works</div>
+            <div class="small">This page validates the pasted URL, shows a preview and displays mock quality options. Clicking a download produces a placeholder file — replace the placeholder with a backend that actually fetches and serves the media (for private/personal use and within legal bounds).</div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <a class="link" href="#" id="learn-more">Learn how</a>
+            </div>
+          </div>
+
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // small particle generator (visual only)
+    const particlesEl = document.querySelector('.particles');
+    for(let i=0;i<18;i++){const p=document.createElement('div');p.className='particle';p.style.left=(Math.random()*100)+'%';p.style.top=(Math.random()*100)+'%';p.style.width=(4+Math.random()*12)+'px';p.style.height=p.style.width;p.style.opacity=(0.03+Math.random()*0.07);particlesEl.appendChild(p)}
+
+    const input = document.getElementById('url-input');
+    const plat = document.getElementById('platform');
+    const downloadBtn = document.getElementById('download-btn');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    const bar = document.getElementById('bar');
+    const resultList = document.getElementById('result-list');
+    const meta = document.getElementById('meta');
+    const copyBtn = document.getElementById('copy-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const thumb = document.querySelector('.thumb');
+
+    function validURL(str){ try{ new URL(str); return true;}catch(e){return false} }
+
+    downloadBtn.addEventListener('click', ()=>{
+      const url = input.value.trim();
+      if(!url || !validURL(url)){
+        alert('Please paste a valid URL.');
+        return;
+      }
+      // show loading
+      results.style.display='none';loading.style.display='block';bar.style.width='0%';
+      // animate bar
+      setTimeout(()=>bar.style.width='55%',50);
+      setTimeout(()=>bar.style.width='85%',450);
+
+      // Simulate server processing delay (demo only)
+      setTimeout(()=>{
+        loading.style.display='none';results.style.display='block';bar.style.width='100%';
+        // Fill preview meta (very minimal)
+        meta.textContent = `${plat.value.toUpperCase()} • ${new URL(url).hostname}`;
+        thumb.textContent = 'Preview unavailable (demo)';
+
+        // create mock download options depending on platform
+        resultList.innerHTML='';
+        const options = getMockOptions(plat.value);
+        options.forEach(opt =>{
+          const row = document.createElement('div');row.className='result-row';
+          row.innerHTML = `<div><div class="quality">${opt.label}</div><div class="small">${opt.hint}</div></div><div><button class="btn btn-primary" data-q="${opt.q}" data-type="${opt.type}">Download</button></div>`;
+          resultList.appendChild(row);
+        });
+        // attach download handlers
+        resultList.querySelectorAll('button').forEach(b=>b.addEventListener('click', mockDownload));
+      },900);
+    });
+
+    function getMockOptions(platform){
+      if(platform==='youtube'){
+        return [
+          {label:'MP4 — 1080p (Mock)',hint:'Best resolution — WEBM/MP4',q:'1080p',type:'video'},
+          {label:'MP4 — 720p (Mock)',hint:'Good size / quality',q:'720p',type:'video'},
+          {label:'MP3 — 320kbps (Mock)',hint:'Audio only',q:'320kbps',type:'audio'}
+        ];
+      }else{
+        return [
+          {label:'MP4 — Original (Mock)',hint:'Original post resolution',q:'orig',type:'video'},
+          {label:'MP4 — Medium (Mock)',hint:'Compressed',q:'med',type:'video'}
+        ];
+      }
+    }
+
+    function mockDownload(e){
+      const btn = e.currentTarget;btn.disabled=true;btn.textContent='Preparing...';
+      setTimeout(()=>{
+        // generate a placeholder file to download
+        const q = btn.getAttribute('data-q');
+        const type = btn.getAttribute('data-type');
+        const filename = `streamsave_placeholder_${type}_${q}.txt`;
+        const content = `This is a placeholder file generated by the StreamSave demo frontend.\n\nTo enable real downloads, implement a backend service that fetches media and streams it to users.\n\nNote: Make sure you comply with platform terms of service and copyright law.`;
+        const blob = new Blob([content],{type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);a.download = filename;document.body.appendChild(a);a.click();a.remove();
+        btn.disabled=false;btn.textContent='Download';
+      },900);
+    }
+
+    copyBtn.addEventListener('click', ()=>{
+      const val = input.value.trim(); if(!val){alert('No link to copy');return}
+      navigator.clipboard?.writeText(val).then(()=>{alert('Link copied to clipboard')}).catch(()=>{prompt('Copy this link manually', val)})
+    })
+
+    clearBtn.addEventListener('click', ()=>{input.value='';meta.textContent='No link yet — paste any public link to preview basic metadata.';thumb.textContent='Preview will appear here';results.style.display='none';loading.style.display='none';})
+
+    // Learn more opens a short info modal (simple new tab with instructions)
+    document.getElementById('learn-more').addEventListener('click',(ev)=>{
+      ev.preventDefault();
+      const info = `To enable real downloads you need a backend service (for example running yt-dlp or similar) that: 1) accepts a public URL 2) fetches and converts the media 3) streams it back to the user or provides a signed link.\n\nKeep in mind: many platforms disallow unauthorized downloading and redistribution. Only fetch content you are allowed to use.`;
+      alert(info);
+    });
+  </script>
+</body>
+</html>
